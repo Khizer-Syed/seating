@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Owais & Sadia</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600&family=Great+Vibes&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="header">
+  <div class="star-decor star1">✦</div>
+  <div class="star-decor star2">✦</div>
+  <div class="star-decor star3">✦</div>
+  <div class="star-decor star4">✦</div>
+
+  <div class="arabic-text">بِسْمِ اللهِ الرَّحْمٰنِ الرَّحِيْمِ</div>
+  <div class="bismillah">
+    In the name of Allah, the Most Compassionate, the Most Merciful
+  </div>
+
+  <div class="welcome-text">
+    <span class="parents-names">Mrs. Maryam Siddiqui <br>& <br>Mr. Abdur Rahman Amir</span><br>
+    welcome you all.
+  </div>
+  <div class="couple-names">Owais & Sadia</div>
+
+  <div class="arabic-text">
+    بَارَكَ اللَّهُ لَكَ، وَبَارَكَ عَلَيْكَ، وَجَمَعَ بَيْنَكُمَا فِي خَيْرٍ
+  </div>
+  <div class="interpretation">
+    Baa-rakal-laahu la-kum, wa baa-raka alay-kum, wa jamaa ba-yna-kumaa fee khayr
+  </div>
+  <div class="interpretation italic">
+    "May Allah bless you and shower His blessings upon you, and may He unite you both in goodness."
+  </div>
+  <div class="praise">[Hadith | Abu Dawood 2130]</div>
+</div>
+
+<div class="container">
+  <div class="search-section">
+    <label class="search-label">Find Your Table</label>
+    <input
+      type="text"
+      class="search-bar"
+      id="searchInput"
+      placeholder="Enter your name..."
+      autocomplete="off"
+    >
+    <div class="search-result" id="searchResult"></div>
+  </div>
+
+  <div class="tabs">
+    <div class="tab active" onclick="switchTab('name')">Filter by Name</div>
+    <div class="tab" onclick="switchTab('table')">Filter by Table</div>
+  </div>
+
+  <div id="nameContent" class="content-section active"></div>
+  <div id="tableContent" class="content-section"></div>
+</div>
+
+<script src="script.js" defer></script>
+</body>
+</html>

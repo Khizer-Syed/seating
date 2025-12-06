@@ -1,0 +1,323 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Cinzel', serif;
+    background: #f0e8e8;
+    min-height: 100vh;
+    padding-bottom: 40px;
+}
+
+.header {
+    /*background: linear-gradient(135deg, rgba(245, 240, 242, 0.97) 0%, rgba(250, 245, 248, 0.97) 50%, rgba(245, 242, 245, 0.97) 100%);*/
+    background: linear-gradient(rgba(0,0,0,0.9), rgba(0,0,0,0.75)), url("background.png") no-repeat center center/cover;
+    padding: 50px 20px;
+    text-align: center;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    position: relative;
+    overflow: hidden;
+}
+
+.star-decor {
+    position: absolute;
+    color: #b8a8b8;
+    opacity: 0.3;
+    font-size: 18px;
+    z-index: 1;
+}
+
+.star1 { top: 20px; left: 30px; }
+.star2 { top: 20px; right: 30px; }
+.star3 { bottom: 20px; left: 50px; }
+.star4 { bottom: 20px; right: 50px; }
+
+.arabic-text {
+    font-size: 32px;
+    color: #a88570;
+    margin-bottom: 12px;
+    position: relative;
+    z-index: 1;
+    letter-spacing: 1px;
+}
+
+.bismillah {
+    font-size: 12px;
+    color: #aa8c8c;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    margin-bottom: 30px;
+    position: relative;
+    z-index: 1;
+}
+
+.interpretation {
+    font-size: 13px;
+    color: #aa8c8c;
+    line-height: 1.8;
+    margin: 8px auto;
+    max-width: 650px;
+    position: relative;
+    z-index: 1;
+}
+
+.italic {
+    font-style: italic;
+}
+
+.praise {
+    font-size: 11px;
+    color: #a88570;
+    margin-bottom: 35px;
+    position: relative;
+    z-index: 1;
+}
+
+.couple-names {
+    font-family: 'Great Vibes', cursive;
+    font-size: 64px;
+    color: #b89ab8;
+    margin: 30px 0 25px 0;
+    line-height: 1.2;
+    position: relative;
+    z-index: 1;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.welcome-text {
+    font-size: 14px;
+    color: #aa8c8c;
+    letter-spacing: 1px;
+    line-height: 1.9;
+    margin-top: 20px;
+    position: relative;
+    z-index: 1;
+}
+
+.parents-names {
+    font-weight: 600;
+    color: #a88570;
+    font-size: 15px;
+}
+
+.container {
+    max-width: 800px;
+    margin: 30px auto;
+    padding: 0 20px;
+}
+
+.search-section {
+    background: rgba(255, 255, 255, 0.9);
+    padding: 25px;
+    border-radius: 10px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    margin-bottom: 25px;
+}
+
+.search-label {
+    font-size: 14px;
+    color: #6a5a6a;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 12px;
+    display: block;
+}
+
+.search-bar {
+    width: 100%;
+    padding: 15px 20px;
+    font-size: 16px;
+    border: 2px solid #d4b8c8;
+    border-radius: 8px;
+    font-family: 'Cinzel', serif;
+    outline: none;
+    transition: border-color 0.3s;
+}
+
+.search-bar:focus {
+    border-color: #a88b98;
+}
+
+.search-result {
+    margin-top: 20px;
+    padding: 20px;
+    background: #f9f5f7;
+    border-radius: 8px;
+    border-left: 4px solid #a88b98;
+    display: none;
+}
+
+.search-result.show {
+    display: block;
+}
+
+.result-name {
+    font-size: 18px;
+    color: #6a5a6a;
+    margin-bottom: 8px;
+    font-weight: 600;
+}
+
+.result-table {
+    font-size: 24px;
+    color: #a88b98;
+    font-weight: 600;
+}
+
+.no-result {
+    color: #8b6b7b;
+    font-size: 14px;
+    text-align: center;
+}
+
+.tabs {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.tab {
+    flex: 1;
+    padding: 15px;
+    background: rgba(255, 255, 255, 0.9);
+    border: 2px solid #d4b8c8;
+    border-radius: 8px;
+    text-align: center;
+    cursor: pointer;
+    font-size: 14px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #6a5a6a;
+    transition: all 0.3s;
+}
+
+.tab:hover {
+    background: #f9f5f7;
+}
+
+.tab.active {
+    background: #a88b98;
+    color: white;
+    border-color: #a88b98;
+}
+
+.content-section {
+    display: none;
+}
+
+.content-section.active {
+    display: block;
+}
+
+.alphabet-section, .table-section {
+    background: rgba(255, 255, 255, 0.9);
+    padding: 20px;
+    border-radius: 10px;
+    margin-bottom: 15px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.section-header {
+    font-size: 24px;
+    color: #a88b98;
+    font-weight: 600;
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid #d4b8c8;
+}
+
+.guest-item {
+    padding: 12px 0;
+    border-bottom: 1px solid #f0e8e8;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.guest-item:last-child {
+    border-bottom: none;
+}
+
+.guest-name {
+    font-size: 15px;
+    color: #6a5a6a;
+}
+
+.table-number {
+    font-size: 16px;
+    color: #a88b98;
+    font-weight: 600;
+    background: #f9f5f7;
+    padding: 5px 15px;
+    border-radius: 20px;
+}
+
+.table-guests {
+    margin-top: 10px;
+}
+
+.table-guest-name {
+    padding: 8px 0;
+    font-size: 15px;
+    color: #6a5a6a;
+    border-bottom: 1px solid #f9f5f7;
+}
+
+.table-guest-name:last-child {
+    border-bottom: none;
+}
+
+@media (max-width: 768px) {
+    .header {
+        padding: 20px 15px;
+    }
+
+    .arabic-text {
+        font-size: 26px;
+    }
+
+    .bismillah {
+        font-size: 10px;
+    }
+
+    .interpretation {
+        font-size: 11px;
+        padding: 0 15px;
+    }
+
+    .praise {
+        font-size: 10px;
+    }
+
+    .couple-names {
+        font-size: 48px;
+    }
+
+    .welcome-text {
+        font-size: 12px;
+        padding: 0 15px;
+    }
+
+    .parents-names {
+        font-size: 13px;
+    }
+
+    .floral-left, .floral-right {
+        width: 200px;
+    }
+
+    .search-section {
+        padding: 20px;
+    }
+
+    .tabs {
+        gap: 10px;
+    }
+
+    .tab {
+        font-size: 12px;
+        padding: 12px 8px;
+    }
+}
