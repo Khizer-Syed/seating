@@ -216,6 +216,7 @@ input[type="file"] {
     border-color: #88b888;
 }
 
+
 .table-number {
     font-size: 14px;
     color: #6a5a6a;
@@ -246,6 +247,11 @@ input[type="file"] {
 .table-rect.occupied {
     background: linear-gradient(135deg, #d8f0d8 0%, #c8e8c8 100%);
     border-color: #88b888;
+}
+
+.table-rect.full {
+    background: linear-gradient(135deg, #f0d8d8 0%, #e8c8c8 100%);
+    border-color: #d88888;
 }
 
 .modal {
@@ -283,6 +289,38 @@ input[type="file"] {
 .modal-header h2 {
     color: #6a5a6a;
     font-size: 24px;
+}
+
+/* Error Banner Styles */
+.error-banner {
+    background: #ffe8e8;
+    border-left: 4px solid #d88888;
+    color: #c87878;
+    padding: 15px 20px;
+    border-radius: 8px;
+    margin-bottom: 25px;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    animation: slideDown 0.3s ease-out;
+}
+
+.error-banner::before {
+    content: '⚠';
+    font-size: 20px;
+    flex-shrink: 0;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 .form-group {
@@ -396,7 +434,7 @@ input[type="file"] {
     display: flex;
     gap: 10px;
     margin-bottom: 15px;
-    align-items: end;
+    align-items: center;
 }
 
 .extra-guest-entry input {
@@ -474,17 +512,6 @@ input[type="file"] {
     gap: 15px;
 }
 
-@media (max-width: 768px) {
-    .form-row {
-        grid-template-columns: 1fr;
-    }
-
-    .extra-guest-entry {
-        flex-direction: column;
-        align-items: stretch;
-    }
-}
-
 @media (max-width: 1400px) {
     .floor-plan {
         width: 1000px;
@@ -549,6 +576,15 @@ input[type="file"] {
 
     .stage {
         font-size: 12px;
+    }
+
+    .form-row {
+        grid-template-columns: 1fr;
+    }
+
+    .extra-guest-entry {
+        flex-direction: column;
+        align-items: stretch;
     }
 }
 

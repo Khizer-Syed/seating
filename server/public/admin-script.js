@@ -3,74 +3,6 @@ let zoomScale = 1;
 let extraGuestsCounter = 0;
 let editingGuestId = null;
 
-// Add extra guest field
-function addExtraGuestField(name = '', table = '') {
-    extraGuestsCounter++;
-    const container = document.getElementById('extraGuestsList');
-    const div = document.createElement('div');
-    div.className = 'extra-guest-entry';
-    div.id = `extra-guest-${extraGuestsCounter}`;
-    div.innerHTML = `
-                <div style="flex: 1;">
-                    <input type="text" placeholder="Guest name" value="${name}" class="extra-guest-name" style="width: 100%; padding: 12px; border: 2px solid #d4b8c8; border-radius: 8px; font-family: 'Cinzel', serif; font-size: 14px; outline: none;">
-                </div>
-                <div style="flex: 1;">
-                    <input type="number" placeholder="Table" min="1" max="75" value="${table}" class="extra-guest-table" style="width: 100%; padding: 12px; border: 2px solid #d4b8c8; border-radius: 8px; font-family: 'Cinzel', serif; font-size: 14px; outline: none;">
-                </div>
-                <button type="button" class="btn-remove-extra" onclick="removeExtraGuestField(${extraGuestsCounter})">×</button>
-            `;
-    container.appendChild(div);
-}
-
-function removeExtraGuestField(id) {
-    const element = document.getElementById(`extra-guest-${id}`);
-    if (element) {
-        element.remove();
-    }
-}
-
-function getExtraGuests() {
-    const extraGuests = [];
-    const entries = document.querySelectorAll('.extra-guest-entry');
-    entries.forEach(entry => {
-        const name = entry.querySelector('.extra-guest-name').value.trim();
-        const table = entry.querySelector('.extra-guest-table').value;
-        if (name && table) {
-            extraGuests.push({
-                name: name,
-                tableNumber: parseInt(table)
-            });
-        }
-    });
-    return extraGuests;
-}
-
-function clearExtraGuestFields() {
-    document.getElementById('extraGuestsList').innerHTML = '';
-    extraGuestsCounter = 0;
-}
-
-function populateEditForm(guest) {
-    editingGuestId = guest._id;
-    document.getElementById('modalTitle').textContent = 'Edit Guest';
-    document.getElementById('guestName').value = guest.name;
-    document.getElementById('tableNumber').value = guest.tableNumber;
-    document.getElementById('guestEmail').value = guest.email || '';
-    document.getElementById('guestPhone').value = guest.phone || '';
-    document.getElementById('extraGuestsCount').value = guest.extraGuestsCount || 0;
-
-    // Clear and populate extra guests
-    clearExtraGuestFields();
-    if (guest.extraGuests && guest.extraGuests.length > 0) {
-        guest.extraGuests.forEach(extra => {
-            addExtraGuestField(extra.name, extra.tableNumber);
-        });
-    }
-
-    document.getElementById('submitBtn').textContent = 'Update Guest';
-    document.getElementById('guestModal').classList.add('show');
-}
-
 // Table positions matching the floor plan image
 const tablePositions = {
     // Left section - 4 columns
@@ -101,6 +33,86 @@ const tablePositions = {
     46: {x: 820, y: 630}, 59: {x: 900, y: 630}, 62: {x: 980, y: 630}, 75: {x: 1060, y: 630},
     45: {x: 820, y: 710}, 60: {x: 900, y: 710}, 61: {x: 980, y: 710},
 };
+
+// Show error banner
+function showError(message) {
+    const errorBanner = document.getElementById('errorBanner');
+    const errorMessage = document.getElementById('errorMessage');
+    errorMessage.textContent = message;
+    errorBanner.style.display = 'block';
+
+    // Auto-hide after 5 seconds
+    setTimeout(() => {
+        hideError();
+    }, 5000);
+}
+
+// Hide error banner
+function hideError() {
+    const errorBanner = document.getElementById('errorBanner');
+    errorBanner.style.display = 'none';
+}
+
+// Add extra guest field
+function addExtraGuestField(name = '') {
+    extraGuestsCounter++;
+    const container = document.getElementById('extraGuestsList');
+    const div = document.createElement('div');
+    div.className = 'extra-guest-entry';
+    div.id = `extra-guest-${extraGuestsCounter}`;
+    div.innerHTML = `
+        <div style="flex: 1;">
+            <input type="text" placeholder="Guest name" value="${name}" class="extra-guest-name" style="width: 100%; padding: 12px; border: 2px solid #d4b8c8; border-radius: 8px; font-family: 'Cinzel', serif; font-size: 14px; outline: none;">
+        </div>
+        <button type="button" class="btn-remove-extra" onclick="removeExtraGuestField(${extraGuestsCounter})">×</button>
+    `;
+    container.appendChild(div);
+}
+
+function removeExtraGuestField(id) {
+    const element = document.getElementById(`extra-guest-${id}`);
+    if (element) {
+        element.remove();
+    }
+}
+
+function getExtraGuests() {
+    const extraGuests = [];
+    const entries = document.querySelectorAll('.extra-guest-entry');
+    entries.forEach(entry => {
+        const name = entry.querySelector('.extra-guest-name').value.trim();
+        if (name) {
+            extraGuests.push(name);
+        }
+    });
+    return extraGuests;
+}
+
+function clearExtraGuestFields() {
+    document.getElementById('extraGuestsList').innerHTML = '';
+    extraGuestsCounter = 0;
+}
+
+function populateEditForm(guest) {
+    editingGuestId = guest._id;
+    document.getElementById('modalTitle').textContent = 'Edit Guest';
+    document.getElementById('guestName').value = guest.name;
+    document.getElementById('tableNumber').value = guest.tableNumber;
+    document.getElementById('guestEmail').value = guest.email || '';
+    document.getElementById('guestPhone').value = guest.phone || '';
+    document.getElementById('extraGuestsCount').value = guest.extraGuestsCount || 0;
+
+    // Clear and populate extra guests
+    clearExtraGuestFields();
+    if (guest.extraGuests && guest.extraGuests.length > 0) {
+        guest.extraGuests.forEach(extra => {
+            addExtraGuestField(extra);
+        });
+    }
+
+    document.getElementById('submitBtn').textContent = 'Update Guest';
+    document.getElementById('guestModal').classList.add('show');
+}
 
 function initializeFloorPlan() {
     const floorPlan = document.getElementById('floorPlan');
@@ -142,74 +154,107 @@ function updateZoom() {
 }
 
 function updateTableDisplay() {
+    // Count guests per table and total seats
     const tableCounts = {};
+    const tableSeats = {};
+
     guests.forEach(guest => {
-        const guestsAtTable = 1 + (guest.extraGuestsCount || 0) + (guest.extraGuests ? guest.extraGuests.length : 0);
-        tableCounts[guest.tableNumber] = (tableCounts[guest.tableNumber] || 0) + guestsAtTable;
+        tableCounts[guest.tableNumber] = (tableCounts[guest.tableNumber] || 0) + 1;
+
+        // Calculate total seats (main guest + extras)
+        let seats = 1; // Main guest
+        seats += (guest.extraGuests || []).length;
+        seats += (guest.extraGuestsCount || 0);
+        tableSeats[guest.tableNumber] = (tableSeats[guest.tableNumber] || 0) + seats;
     });
 
+    // Update each table on the floor plan
     for (let i = 1; i <= 75; i++) {
         const tableElement = document.getElementById(`table-${i}`);
         if (tableElement) {
-            const count = tableCounts[i] || 0;
-            if (count > 0) {
+            const guestCount = tableCounts[i] || 0;
+            const seatCount = tableSeats[i] || 0;
+            if (seatCount === 10) {
+                tableElement.classList.add('full');
+                tableElement.classList.remove('occupied');
+            } else if (guestCount > 0 && seatCount < 10) {
                 tableElement.classList.add('occupied');
+                tableElement.classList.remove('full');
             } else {
                 tableElement.classList.remove('occupied');
+                tableElement.classList.remove('full');
             }
         }
     }
 
-    updateStats(tableCounts);
+    updateStats();
 }
 
-function updateStats(tableCounts) {
-    document.getElementById('totalGuests').textContent = Object.values(tableCounts).reduce((a, b) => a + b, 0);
-    document.getElementById('occupiedTables').textContent = new Set(guests.map(g => g.tableNumber)).size;
+function updateStats() {
+    document.getElementById('totalGuests').textContent = guests.reduce((sum, g) => {
+        return sum + 1 + (g.extraGuests ? g.extraGuests.length : 0) + (g.extraGuestsCount || 0);
+    }, 0);
+    const occupiedTables = new Set(guests.map(g => g.tableNumber)).size;
+    document.getElementById('occupiedTables').textContent = occupiedTables;
 }
 
 function showTableDetails(tableNumber) {
     const tableGuests = guests.filter(g => g.tableNumber === tableNumber);
     document.getElementById('tableModalTitle').textContent = `Table ${tableNumber}`;
 
+    // Calculate total seats
+    let totalSeats = 0;
+    tableGuests.forEach(guest => {
+        totalSeats += 1; // Main guest
+        totalSeats += (guest.extraGuests || []).length;
+        totalSeats += (guest.extraGuestsCount || 0);
+    });
+
+    document.getElementById('tableModalStats').textContent =
+        `${tableGuests.length} main guest${tableGuests.length !== 1 ? 's' : ''} • ${totalSeats} total seat${totalSeats !== 1 ? 's' : ''}`;
+
     const guestList = document.getElementById('tableGuestList');
-    let guestCount = 0;
     if (tableGuests.length === 0) {
         guestList.innerHTML = '<p style="text-align: center; color: #8a7a8a;">No guests assigned to this table</p>';
     } else {
         guestList.innerHTML = tableGuests.map(guest => {
-            const guestAtTable = []
-            guestAtTable.push(`
-                    <div class="guest-item">
-                        <span class="guest-name">${guest.name}</span>
-                        <button class="btn-remove" onclick="removeGuest(${guest.id})">Remove</button>
-                    </div>
-                `)
+            let extraInfo = '';
             if (guest.extraGuests && guest.extraGuests.length > 0) {
+                extraInfo += `<div style="margin-left: 20px; margin-top: 5px; font-size: 12px; color: #8a7a8a;">`;
                 guest.extraGuests.forEach(extra => {
-                    guestAtTable.push(`
-                        <div class="guest-item">
-                            <span class="guest-name">${extra.name}</span>
-                        </div>
-                    `)
-                })
+                    extraInfo += `<div>+ ${extra}</div>`;
+                });
+                extraInfo += `</div>`;
             }
-            if (guest.extraGuestsCount && guest.extraGuestsCount > 0) {
-                for (let i = 1; i <= guest.extraGuestsCount; i++) {
-                    guestAtTable.push(`
-                        <div class="guest-item">
-                            <span class="guest-name">Extra Guest for ${guest.name} - ${i}</span>
-                        </div>
-                    `)
-                }
+            if (guest.extraGuestsCount > 0) {
+                extraInfo += `<div style="margin-left: 20px; margin-top: 5px; font-size: 12px; color: #8a7a8a;">+ ${guest.extraGuestsCount} unnamed guest${guest.extraGuestsCount !== 1 ? 's' : ''}</div>`;
             }
-            guestCount += guestAtTable.length;
-            return guestAtTable.join('');
-        });
 
+            return `
+                <div class="guest-item" style="display: block;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <span class="guest-name">${guest.name}</span>
+                            ${guest.email ? `<div style="font-size: 11px; color: #a88b98; margin-top: 3px;">${guest.email}</div>` : ''}
+                            ${guest.phone ? `<div style="font-size: 11px; color: #a88b98;">${guest.phone}</div>` : ''}
+                        </div>
+                        <div style="display: flex; gap: 8px;">
+                            <button class="btn-edit" onclick='editGuestFromTable(${JSON.stringify(guest).replace(/'/g, "&#39;")})'>Edit</button>
+                            <button class="btn-remove" onclick="removeGuest('${guest._id}')">Remove</button>
+                        </div>
+                    </div>
+                    ${extraInfo}
+                </div>
+            `;
+        }).join('');
     }
-    document.getElementById('tableModalStats').textContent = `Assigned ${guestCount} | Remaining ${10 - guestCount} seats`;
+
     document.getElementById('tableModal').classList.add('show');
+}
+
+function editGuestFromTable(guest) {
+    closeTableModal();
+    setTimeout(() => populateEditForm(guest), 100);
 }
 
 function closeTableModal() {
@@ -218,22 +263,34 @@ function closeTableModal() {
 
 async function removeGuest(id) {
     if (confirm('Are you sure you want to remove this guest?')) {
+        const token = localStorage.getItem('adminToken');
+
         try {
-            const response = await fetch(`/api/guests/${id}`, {method: 'DELETE'});
+            const response = await fetch(`/api/guests/${id}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            if (response.status === 401 || response.status === 403) {
+                localStorage.removeItem('adminToken');
+                window.location.href = '/admin/login';
+                return;
+            }
+
             if (response.ok) {
-                guests = guests.filter(g => g.id !== id);
+                guests = guests.filter(g => g._id !== id);
                 updateTableDisplay();
+                // Refresh the table modal if it's open
                 const modalTitle = document.getElementById('tableModalTitle').textContent;
                 const tableNumber = parseInt(modalTitle.split(' ')[1]);
                 showTableDetails(tableNumber);
+                updateTableDisplay();
             }
         } catch (error) {
             console.error('Error removing guest:', error);
-            guests = guests.filter(g => g.id !== id);
-            updateTableDisplay();
-            const modalTitle = document.getElementById('tableModalTitle').textContent;
-            const tableNumber = parseInt(modalTitle.split(' ')[1]);
-            showTableDetails(tableNumber);
+            showError('Failed to remove guest. Please try again.');
         }
     }
 }
@@ -245,48 +302,86 @@ function openAddModal() {
     document.getElementById('guestForm').reset();
     clearExtraGuestFields();
     document.getElementById('extraGuestsCount').value = '0';
+    hideError(); // Clear any previous errors
     document.getElementById('guestModal').classList.add('show');
 }
 
 function closeModal() {
     document.getElementById('guestModal').classList.remove('show');
     editingGuestId = null;
+    hideError();
 }
 
 document.getElementById('guestForm').addEventListener('submit', async (e) => {
     e.preventDefault();
-    const token = localStorage.getItem('adminToken');
+    hideError(); // Clear any previous errors
+
     const guestData = {
         name: document.getElementById('guestName').value,
         tableNumber: parseInt(document.getElementById('tableNumber').value),
-        phone: document.getElementById('guestPhone').value,
-        email: document.getElementById('guestEmail').value,
-        extraGuestsCount: parseInt(document.getElementById('extraGuestsCount').value),
-        extraGuests: getExtraGuests() || []
+        email: document.getElementById('guestEmail').value || undefined,
+        phone: document.getElementById('guestPhone').value || undefined,
+        extraGuests: getExtraGuests(),
+        extraGuestsCount: parseInt(document.getElementById('extraGuestsCount').value) || 0
     };
 
+    const token = localStorage.getItem('adminToken');
+
     try {
-        const response = await fetch('/api/guests', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                Authorization: `Bearer ${token}`
-            },
-            body: JSON.stringify(guestData)
-        });
+        let response;
+
+        if (editingGuestId) {
+            // Update existing guest
+            response = await fetch(`/api/guests/${editingGuestId}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify(guestData)
+            });
+        } else {
+            // Create new guest
+            response = await fetch('/api/guests', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify(guestData)
+            });
+        }
+
+        if (response.status === 401 || response.status === 403) {
+            localStorage.removeItem('adminToken');
+            window.location.href = '/admin/login';
+            return;
+        }
 
         if (response.ok) {
-            const newGuest = await response.json();
-            guests.push(newGuest);
+            const savedGuest = await response.json();
+
+            if (editingGuestId) {
+                // Update guest in array
+                const index = guests.findIndex(g => g._id === editingGuestId);
+                if (index !== -1) {
+                    guests[index] = savedGuest;
+                }
+            } else {
+                // Add new guest to array
+                guests.push(savedGuest);
+            }
+
             updateTableDisplay();
             closeModal();
+        } else {
+            const error = await response.json();
+            // Show error banner
+            showError(error.error || 'Failed to save guest');
         }
     } catch (error) {
-        console.error('Error adding guest:', error);
-        guestData.id = Date.now();
-        guests.push(guestData);
-        updateTableDisplay();
-        closeModal();
+        console.error('Error saving guest:', error);
+        showError('Failed to save guest. Please try again.');
     }
 });
 
@@ -298,11 +393,10 @@ async function handleFileUpload(event) {
     reader.onload = async (e) => {
         try {
             const data = new Uint8Array(e.target.result);
-            const workbook = XLSX.read(data, {type: 'array'});
+            const workbook = XLSX.read(data, { type: 'array' });
             const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
             const jsonData = XLSX.utils.sheet_to_json(firstSheet);
 
-            // Expected format: name, tableNumber, email (optional), phone (optional), extraGuestsCount (optional)
             const newGuests = jsonData.map(row => ({
                 name: row.name || row.Name || row.NAME,
                 tableNumber: parseInt(row.tableNumber || row['Table Number'] || row.table || row.Table || row.TABLE),
@@ -330,7 +424,7 @@ async function handleFileUpload(event) {
 
             if (response.ok) {
                 const result = await response.json();
-                await loadGuests(); // Reload all guests from server
+                await loadGuests();
                 alert(result.message + (result.errors ? `\n\nErrors:\n${result.errors.join('\n')}` : ''));
             } else {
                 const error = await response.json();
@@ -345,6 +439,7 @@ async function handleFileUpload(event) {
     event.target.value = '';
 }
 
+// Close modals when clicking outside
 document.getElementById('guestModal').addEventListener('click', (e) => {
     if (e.target.id === 'guestModal') closeModal();
 });
@@ -354,26 +449,8 @@ document.getElementById('tableModal').addEventListener('click', (e) => {
 });
 
 async function loadGuests() {
-    // Check authentication
-    const token = localStorage.getItem('adminToken');
-    if (!token) {
-        window.location.href = '/admin/login';
-        return;
-    }
-
     try {
-        const response = await fetch('/api/guests', {
-            headers: {
-                'Authorization': `Bearer ${token}`
-            }
-        });
-
-        if (response.status === 401 || response.status === 403) {
-            // Token invalid or expired
-            localStorage.removeItem('adminToken');
-            window.location.href = '/admin/login';
-            return;
-        }
+        const response = await fetch('/api/guests');
 
         if (response.ok) {
             guests = await response.json();
@@ -384,11 +461,11 @@ async function loadGuests() {
     }
 }
 
-// Add logout functionality
 function logout() {
     localStorage.removeItem('adminToken');
     window.location.href = '/admin/login';
 }
 
+// Initialize
 initializeFloorPlan();
 loadGuests();

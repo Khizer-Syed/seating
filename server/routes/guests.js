@@ -6,7 +6,7 @@ import { authenticateToken } from '../middleware/auth.js';
 const router = express.Router();
 
 // GET /api/guests - Get all guests
-router.get('/', authenticateToken, async (req, res) => {
+router.get('/', async (req, res) => {
     try {
         const { search, table } = req.query;
         let query = {};
@@ -23,7 +23,6 @@ router.get('/', authenticateToken, async (req, res) => {
         if (table) {
             query.tableNumber = parseInt(table);
         }
-
         const guests = await Guest.find(query).sort({ name: 1 });
         res.json(guests);
     } catch (error) {
@@ -33,7 +32,7 @@ router.get('/', authenticateToken, async (req, res) => {
 });
 
 // GET /api/guests/:id - Get single guest
-router.get('/:id', authenticateToken, async (req, res) => {
+router.get('/:id', async (req, res) => {
     try {
         const guest = await Guest.findById(req.params.id);
         if (!guest) {
@@ -58,6 +57,19 @@ router.post('/', authenticateToken, async (req, res) => {
 
         if (tableNumber < 1 || tableNumber > 75) {
             return res.status(400).json({ error: 'Table number must be between 1 and 75' });
+        }
+
+        const assignedGuestsAtTable = await Guest.find({ tableNumber });
+        const totalSeatsAtTable = assignedGuestsAtTable.reduce((sum, guest) => {
+            return sum + 1 + (guest.extraGuests?.length || 0) + (guest.extraGuestsCount || 0);
+        }, 0);
+
+        if (totalSeatsAtTable >= 10) {
+            return res.status(400).json({ error: 'No seats left at this table' });
+        }
+
+        if ((totalSeatsAtTable + 1 + (extraGuestsCount || 0) + (extraGuests.length || 0)) > 10) {
+            return res.status(400).json({ error: 'Adding this guest exceeds table capacity.' });
         }
 
         // Create new guest

@@ -1,20 +1,6 @@
 // models/Guest.js
 import mongoose from 'mongoose';
 
-const extraGuestSchema = new mongoose.Schema({
-    name: {
-        type: String,
-        required: true,
-        trim: true
-    },
-    tableNumber: {
-        type: Number,
-        required: true,
-        min: 1,
-        max: 75
-    }
-}, { _id: false });
-
 const guestSchema = new mongoose.Schema({
     name: {
         type: String,
@@ -38,7 +24,11 @@ const guestSchema = new mongoose.Schema({
         type: String,
         trim: true
     },
-    extraGuests: [extraGuestSchema],
+    extraGuests: {
+        type: [String], // This indicates an array of strings
+        default: [], // Optionally, set a default empty array
+        trim: true
+    },
     extraGuestsCount: {
         type: Number,
         default: 0,
