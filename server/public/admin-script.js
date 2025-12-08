@@ -449,9 +449,13 @@ document.getElementById('tableModal').addEventListener('click', (e) => {
 });
 
 async function loadGuests() {
+    const token = localStorage.getItem('adminToken');
+    if (!token) {
+        window.location.href = '/admin/login';
+        return;
+    }
     try {
         const response = await fetch('/api/guests');
-
         if (response.ok) {
             guests = await response.json();
             updateTableDisplay();
