@@ -24,12 +24,20 @@
                 <div class="stat-label">Total Guests</div>
             </div>
             <div class="stat-card">
-                <div class="stat-number" id="occupiedTables">0</div>
-                <div class="stat-label">Tables Occupied</div>
+                <div class="stat-number" id="totalGuestsAttending">0</div>
+                <div class="stat-label">Guests Attending</div>
             </div>
             <div class="stat-card">
-                <div class="stat-number">75</div>
-                <div class="stat-label">Total Tables</div>
+                <div class="stat-number" id="totalGuestsAwaiting">0</div>
+                <div class="stat-label">Guests Awaiting</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="totalGuestsDeclined">0</div>
+                <div class="stat-label">Guests Declined</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="occupiedTables">0</div>
+                <div class="stat-label">Tables Occupied</div>
             </div>
         </div>
     </div>
@@ -102,6 +110,15 @@
             <div class="form-group">
                 <label>Email (Optional)</label>
                 <input type="email" id="guestEmail" placeholder="guest@example.com">
+            </div>
+
+            <div class="form-group">
+                <label>Status (Optional)</label>
+                <select id="responseStatus">
+                    <option value="Attending">Accepted</option>
+                    <option value="Declined">Declined</option>
+                    <option value="Awaiting" selected>Awaiting</option>
+                </select>
             </div>
 
             <div class="extra-guests-section">

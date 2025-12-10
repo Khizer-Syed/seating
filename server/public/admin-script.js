@@ -187,7 +187,7 @@ function renderUnassignedGuests() {
     unassignedList.innerHTML = unassignedGuests.map(guest => {
         const groupSize = calculateGroupSize(guest);
         return `
-                    <div class="guest-group" draggable="true" data-guest-id="${guest._id}">
+                    <div class="guest-group ${guest.response && guest.response === 'Declined' ? 'declined' : ''}" draggable="true" data-guest-id="${guest._id}">
                         <div class="primary-guest">
                             <span class="edit-guest" onclick="editGuest('${guest._id}')">${guest.name} <span title="Edit Guest">✎</span></span>
                             <span class="group-size">${groupSize} ${groupSize === 1 ? 'person' : 'people'}</span>
@@ -232,7 +232,7 @@ function populateEditForm(guest) {
     document.getElementById('guestEmail').value = guest.email || '';
     document.getElementById('guestPhone').value = guest.phone || '';
     document.getElementById('extraGuestsCount').value = guest.extraGuestsCount || 0;
-
+    document.getElementById('responseStatus').value = guest.response;
     // Clear and populate extra guests
     clearExtraGuestFields();
     if (guest.extraGuests && guest.extraGuests.length > 0) {
@@ -398,6 +398,16 @@ function updateStats() {
     document.getElementById('totalGuests').textContent = allGuests.reduce((sum, g) => {
         return sum + 1 + (g.extraGuests ? g.extraGuests.length : 0) + (g.extraGuestsCount || 0);
     }, 0);
+    document.getElementById('totalGuestsAttending').textContent = allGuests.filter(g => g.response === 'Attending').reduce((sum, g) => {
+        return sum + 1 + (g.extraGuests ? g.extraGuests.length : 0) + (g.extraGuestsCount || 0);
+    }, 0);
+    document.getElementById('totalGuestsAwaiting').textContent = allGuests.filter(g => g.response === 'Awaiting').reduce((sum, g) => {
+        return sum + 1 + (g.extraGuests ? g.extraGuests.length : 0) + (g.extraGuestsCount || 0);
+    }, 0);
+    document.getElementById('totalGuestsDeclined').textContent = allGuests.filter(g => g.response === 'Declined').reduce((sum, g) => {
+        return sum + 1 + (g.extraGuests ? g.extraGuests.length : 0) + (g.extraGuestsCount || 0);
+    }, 0);
+
     const occupiedTables = allGuests.filter(g => g.tableNumber).map(g => g.tableNumber);
     document.getElementById('occupiedTables').textContent = new Set(occupiedTables).size;
 }
