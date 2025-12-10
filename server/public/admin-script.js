@@ -215,8 +215,8 @@ function renderUnassignedGuests() {
                         </div>
                         ${guest.extraGuests && guest.extraGuests.length > 0 ? `
                             <div class="extra-guests">
-                                ${guest.extraGuests.map((extra, idx) => `
-                                    <div class="extra-guest-item" draggable="true" data-guest-id="${guest._id}" data-extra-index="${idx}">
+                                ${guest.extraGuests.map((extra) => `
+                                    <div class="extra-guest-item">
                                         ${extra.name}
                                     </div>
                                 `).join('')}
@@ -232,7 +232,7 @@ function renderUnassignedGuests() {
     }).join('');
 
     // Add drag event listeners
-    document.querySelectorAll('.guest-group, .extra-guest-item').forEach(el => {
+    document.querySelectorAll('.guest-group').forEach(el => {
         el.addEventListener('dragstart', handleDragStart);
         el.addEventListener('dragend', handleDragEnd);
     });
@@ -242,28 +242,14 @@ function renderUnassignedGuests() {
 function handleDragStart(e) {
     draggedElement = e.target;
     const guestId = e.target.dataset.guestId;
-    const extraIndex = e.target.dataset.extraIndex;
 
     const guest = allGuests.find(g => g._id === guestId);
 
-    if (extraIndex !== undefined) {
-        // Dragging an extra guest
-        draggedGuestData = {
-            type: 'extra',
-            guestId: guestId,
-            extraIndex: parseInt(extraIndex),
-            guest: guest,
-            extraGuest: guest.extraGuests[parseInt(extraIndex)]
-        };
-    } else {
-        // Dragging entire group
-        draggedGuestData = {
-            type: 'group',
-            guestId: guestId,
-            guest: guest,
-            groupSize: calculateGroupSize(guest)
-        };
-    }
+    draggedGuestData = {
+        guestId: guestId,
+        guest: guest,
+        groupSize: calculateGroupSize(guest)
+    };
 
     e.target.classList.add('dragging');
     e.dataTransfer.effectAllowed = 'move';
@@ -301,7 +287,7 @@ async function handleDrop(e) {
 async function assignTable(dragData, tableNumber) {
     const token = localStorage.getItem('adminToken');
     const existingCapacity = tableCapacities[tableNumber];
-    const guestsToAdd = dragData.type === 'group' ? dragData.groupSize : 1;
+    const guestsToAdd = dragData.groupSize;
 
     if (existingCapacity + guestsToAdd > 10) {
         showNotification(`Cannot assign to Table ${tableNumber}: capacity exceeded`, 'error');
@@ -331,33 +317,6 @@ async function assignTable(dragData, tableNumber) {
             const error = await response.json();
             showNotification(error.error || 'Failed to assign table', 'error');
         }
-        // else if (dragData.type === 'extra') {
-        //     // Assign single extra guest
-        //     const updatedExtraGuests = [...dragData.guest.extraGuests];
-        //     updatedExtraGuests[dragData.extraIndex] = {
-        //         ...updatedExtraGuests[dragData.extraIndex],
-        //         tableNumber: tableNumber
-        //     };
-        //
-        //     const response = await fetch(`/api/guests/${dragData.guestId}`, {
-        //         method: 'PUT',
-        //         headers: {
-        //             'Content-Type': 'application/json',
-        //             'Authorization': `Bearer ${token}`
-        //         },
-        //         body: JSON.stringify({
-        //             extraGuests: updatedExtraGuests
-        //         })
-        //     });
-        //
-        //     if (response.ok) {
-        //         showNotification(`${dragData.extraGuest.name} assigned to Table ${tableNumber}`);
-        //         await loadUnassignedGuests();
-        //     } else {
-        //         const error = await response.json();
-        //         showNotification(error.error || 'Failed to assign table', 'error');
-        //     }
-        // }
     } catch (error) {
         console.error('Error assigning table:', error);
         showNotification('Failed to assign table', 'error');
@@ -455,14 +414,12 @@ function showTableDetails(tableNumber) {
         guestList.innerHTML = tableGuests.map(guest => {
             let extraInfo = '';
             if (guest.extraGuests && guest.extraGuests.length > 0) {
-                extraInfo += `<div style="margin-left: 20px; margin-top: 5px; font-size: 12px; color: #8a7a8a;">`;
                 guest.extraGuests.forEach(extra => {
-                    extraInfo += `<div>+ ${extra.name}</div>`;
+                    extraInfo += `<div class="extra-guest-item"><div>${extra.name}</div></div>`;
                 });
-                extraInfo += `</div>`;
             }
             if (guest.extraGuestsCount > 0) {
-                extraInfo += `<div style="margin-left: 20px; margin-top: 5px; font-size: 12px; color: #8a7a8a;">+ ${guest.extraGuestsCount} unnamed guest${guest.extraGuestsCount !== 1 ? 's' : ''}</div>`;
+                extraInfo += `<div class="extra-guest-item"><div>+ ${guest.extraGuestsCount} MORE}</div>`;
             }
 
             return `
@@ -474,7 +431,7 @@ function showTableDetails(tableNumber) {
                             ${guest.phone ? `<div style="font-size: 11px; color: #a88b98;">${guest.phone}</div>` : ''}
                         </div>
                         <div style="display: flex; gap: 8px;">
-                            <button class="btn-remove" onclick="removeGuestFromTable('${guest._id}')">Remove</button>
+                            <button class="btn-remove" onclick="removeGuestFromTable('${guest._id}')">VACATE</button>
                         </div>
                     </div>
                     ${extraInfo}
