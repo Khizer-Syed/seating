@@ -36,8 +36,8 @@ function generateNameContent() {
     for (const guest of guests) {
         flattenedGuests.push({ name: guest.name, tableNumber: guest.tableNumber });
         if (guest.extraGuests && guest.extraGuests.length > 0) {
-            guest.extraGuests.forEach(extraName => {
-                flattenedGuests.push({ name: extraName, tableNumber: guest.tableNumber });
+            guest.extraGuests.forEach(extra => {
+                flattenedGuests.push({ ...extra, tableNumber: guest.tableNumber });
             });
         }
         if (guest.extraGuestsCount && guest.extraGuestsCount > 0) {
@@ -46,10 +46,9 @@ function generateNameContent() {
             }
         }
     }
-    const sortedGuests = [...flattenedGuests].sort((a, b) => a.name.localeCompare(b.name));
 
     const groupedByLetter = {};
-    sortedGuests.forEach(guest => {
+    flattenedGuests.forEach(guest => {
         const firstLetter = guest.name[0].toUpperCase();
         if (!groupedByLetter[firstLetter]) {
             groupedByLetter[firstLetter] = [];
@@ -94,8 +93,8 @@ function generateTableContent() {
         tableGuests.forEach(guest => {
             expandedGuests.push({ name: guest.name });
             if (guest.extraGuests && guest.extraGuests.length > 0) {
-                guest.extraGuests.forEach(extraName => {
-                    expandedGuests.push({ name: extraName });
+                guest.extraGuests.forEach(extra => {
+                    expandedGuests.push({ name: extra.name });
                 });
             }
             if (guest.extraGuestsCount && guest.extraGuestsCount > 0) {
@@ -143,7 +142,7 @@ function switchTab(tab) {
 
 async function loadGuests() {
     try {
-        const response = await fetch('/api/guests');
+        const response = await fetch('/api/guests?assigned=true');
         if (response.ok) {
             guests = await response.json();
         }

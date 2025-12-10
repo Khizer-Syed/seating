@@ -8,7 +8,7 @@ const router = express.Router();
 // GET /api/guests - Get all guests
 router.get('/', async (req, res) => {
     try {
-        const { search, table } = req.query;
+        const { search, table, assigned } = req.query;
         let query = {};
 
         // Search by name
@@ -22,6 +22,10 @@ router.get('/', async (req, res) => {
         // Filter by table
         if (table) {
             query.tableNumber = parseInt(table);
+        }
+
+        if (assigned === 'true') {
+            query.tableNumber = { $ne: null };
         }
         const guests = await Guest.find(query).sort({ name: 1 }).collation({ locale: 'en', strength: 2 });
         res.json(guests);
