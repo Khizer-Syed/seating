@@ -1,11 +1,12 @@
-let guests = [];
+let allGuests = [];
+let draggedElement = null;
+let draggedGuestData = null;
 let zoomScale = 1;
 let extraGuestsCounter = 0;
 let editingGuestId = null;
-
-// Table positions matching the floor plan image
+let tableCapacities = {};
+// Table positions
 const tablePositions = {
-    // Left section - 4 columns
     32: {x: 80, y: 150}, 31: {x: 160, y: 150}, 16: {x: 240, y: 150}, 15: {x: 320, y: 150},
     33: {x: 80, y: 230}, 30: {x: 160, y: 230}, 17: {x: 240, y: 230}, 14: {x: 320, y: 230},
     34: {x: 80, y: 310}, 29: {x: 160, y: 310}, 18: {x: 240, y: 310}, 13: {x: 320, y: 310},
@@ -14,16 +15,10 @@ const tablePositions = {
     37: {x: 80, y: 550}, 26: {x: 160, y: 550}, 21: {x: 240, y: 550}, 10: {x: 320, y: 550},
     38: {x: 80, y: 630}, 25: {x: 160, y: 630}, 22: {x: 240, y: 630}, 9: {x: 320, y: 630},
     39: {x: 80, y: 710}, 24: {x: 160, y: 710}, 23: {x: 240, y: 710}, 8: {x: 320, y: 710},
-
-    // Center-left (rectangular tables)
     2: {x: 420, y: 280}, 3: {x: 420, y: 350}, 4: {x: 420, y: 420}, 5: {x: 420, y: 490},
     6: {x: 420, y: 560}, 7: {x: 420, y: 630},
-
-    // Center-right (rectangular tables)
     1: {x: 720, y: 280}, 40: {x: 720, y: 350}, 41: {x: 720, y: 420}, 42: {x: 720, y: 490},
     43: {x: 720, y: 560}, 44: {x: 720, y: 630},
-
-    // Right section - 4 columns
     52: {x: 820, y: 150}, 53: {x: 900, y: 150}, 68: {x: 980, y: 150}, 69: {x: 1060, y: 150},
     51: {x: 820, y: 230}, 54: {x: 900, y: 230}, 67: {x: 980, y: 230}, 70: {x: 1060, y: 230},
     50: {x: 820, y: 310}, 55: {x: 900, y: 310}, 66: {x: 980, y: 310}, 71: {x: 1060, y: 310},
@@ -106,7 +101,7 @@ function populateEditForm(guest) {
     clearExtraGuestFields();
     if (guest.extraGuests && guest.extraGuests.length > 0) {
         guest.extraGuests.forEach(extra => {
-            addExtraGuestField(extra);
+            addExtraGuestField(extra.name);
         });
     }
 
@@ -117,18 +112,25 @@ function populateEditForm(guest) {
 function initializeFloorPlan() {
     const floorPlan = document.getElementById('floorPlan');
 
-    // Create all tables based on positions
     Object.entries(tablePositions).forEach(([tableNum, pos]) => {
         const isRectangular = [1, 2, 3, 4, 5, 6, 7, 40, 41, 42, 43, 44].includes(parseInt(tableNum));
 
         const table = document.createElement('div');
         table.className = isRectangular ? 'table-rect' : 'table-circle';
         table.id = `table-${tableNum}`;
+        table.dataset.tableNumber = tableNum;
         table.style.left = `${pos.x}px`;
         table.style.top = `${pos.y}px`;
-        table.innerHTML = `<div class="table-number">${tableNum}</div>`;
-        table.onclick = () => showTableDetails(parseInt(tableNum));
+        table.innerHTML = `
+                    <div class="table-number">${tableNum}</div>
+                    <div class="table-capacity">0/10</div>
+                `;
 
+        // Make tables drop targets
+        table.addEventListener('dragover', handleDragOver);
+        table.addEventListener('drop', handleDrop);
+        table.addEventListener('dragleave', handleDragLeave);
+        table.onclick = () => showTableDetails(parseInt(tableNum));
         floorPlan.appendChild(table);
     });
 }
@@ -153,53 +155,286 @@ function updateZoom() {
     document.getElementById('zoomLevel').textContent = `${Math.round(zoomScale * 100)}%`;
 }
 
-function updateTableDisplay() {
-    // Count guests per table and total seats
-    const tableCounts = {};
-    const tableSeats = {};
+// Calculate group size
+function calculateGroupSize(guest) {
+    let size = 1; // Primary guest
+    if (guest.extraGuests) {
+        size += guest.extraGuests.length;
+    }
+    if (guest.extraGuestsCount) {
+        size += guest.extraGuestsCount;
+    }
+    return size;
+}
 
-    guests.forEach(guest => {
-        tableCounts[guest.tableNumber] = (tableCounts[guest.tableNumber] || 0) + 1;
+// Load unassigned guests
+async function loadUnassignedGuests() {
+    const token = localStorage.getItem('adminToken');
+    if (!token) {
+        window.location.href = '/admin/login';
+        return;
+    }
 
-        // Calculate total seats (main guest + extras)
-        let seats = 1; // Main guest
-        seats += (guest.extraGuests || []).length;
-        seats += (guest.extraGuestsCount || 0);
-        tableSeats[guest.tableNumber] = (tableSeats[guest.tableNumber] || 0) + seats;
+    try {
+        const response = await fetch('/api/guests', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (response.status === 401 || response.status === 403) {
+            localStorage.removeItem('adminToken');
+            window.location.href = '/admin/login';
+            return;
+        }
+
+        if (response.ok) {
+            allGuests = await response.json();
+            renderUnassignedGuests();
+            updateTableCapacities();
+        }
+    } catch (error) {
+        console.error('Error loading guests:', error);
+        showNotification('Failed to load guests', 'error');
+    }
+}
+
+// Render unassigned guests
+function renderUnassignedGuests() {
+    const unassignedList = document.getElementById('unassignedList');
+    const unassignedGuests = allGuests.filter(g => !g.tableNumber);
+
+    document.getElementById('unassignedCount').textContent =
+        `${unassignedGuests.length} groups (${unassignedGuests.reduce((sum, g) => sum + calculateGroupSize(g), 0)} people)`;
+
+    unassignedList.innerHTML = unassignedGuests.map(guest => {
+        const groupSize = calculateGroupSize(guest);
+        return `
+                    <div class="guest-group" draggable="true" data-guest-id="${guest._id}">
+                        <div class="primary-guest">
+                            <span>${guest.name}</span>
+                            <span class="group-size">${groupSize} ${groupSize === 1 ? 'person' : 'people'}</span>
+                        </div>
+                        ${guest.extraGuests && guest.extraGuests.length > 0 ? `
+                            <div class="extra-guests">
+                                ${guest.extraGuests.map((extra, idx) => `
+                                    <div class="extra-guest-item" draggable="true" data-guest-id="${guest._id}" data-extra-index="${idx}">
+                                        ${extra.name}
+                                    </div>
+                                `).join('')}
+                            </div>
+                        ` : ''}
+                        ${guest.extraGuestsCount > 0 ? `
+                            <div class="extra-guests">
+                                <div class="extra-guest-item">+ ${guest.extraGuestsCount} more</div>
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+    }).join('');
+
+    // Add drag event listeners
+    document.querySelectorAll('.guest-group, .extra-guest-item').forEach(el => {
+        el.addEventListener('dragstart', handleDragStart);
+        el.addEventListener('dragend', handleDragEnd);
+    });
+}
+
+// Drag handlers
+function handleDragStart(e) {
+    draggedElement = e.target;
+    const guestId = e.target.dataset.guestId;
+    const extraIndex = e.target.dataset.extraIndex;
+
+    const guest = allGuests.find(g => g._id === guestId);
+
+    if (extraIndex !== undefined) {
+        // Dragging an extra guest
+        draggedGuestData = {
+            type: 'extra',
+            guestId: guestId,
+            extraIndex: parseInt(extraIndex),
+            guest: guest,
+            extraGuest: guest.extraGuests[parseInt(extraIndex)]
+        };
+    } else {
+        // Dragging entire group
+        draggedGuestData = {
+            type: 'group',
+            guestId: guestId,
+            guest: guest,
+            groupSize: calculateGroupSize(guest)
+        };
+    }
+
+    e.target.classList.add('dragging');
+    e.dataTransfer.effectAllowed = 'move';
+}
+
+function handleDragEnd(e) {
+    e.target.classList.remove('dragging');
+    draggedElement = null;
+    draggedGuestData = null;
+}
+
+function handleDragOver(e) {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    e.currentTarget.classList.add('drop-target');
+}
+
+function handleDragLeave(e) {
+    e.currentTarget.classList.remove('drop-target');
+}
+
+async function handleDrop(e) {
+    e.preventDefault();
+    e.currentTarget.classList.remove('drop-target');
+
+    const tableNumber = parseInt(e.currentTarget.dataset.tableNumber);
+
+    if (!draggedGuestData) return;
+
+    // Assign table
+    await assignTable(draggedGuestData, tableNumber);
+}
+
+// Assign table via API
+async function assignTable(dragData, tableNumber) {
+    const token = localStorage.getItem('adminToken');
+    const existingCapacity = tableCapacities[tableNumber];
+    const guestsToAdd = dragData.type === 'group' ? dragData.groupSize : 1;
+
+    if (existingCapacity + guestsToAdd > 10) {
+        showNotification(`Cannot assign to Table ${tableNumber}: capacity exceeded`, 'error');
+        return;
+    }
+    try {
+
+        const response = await fetch(`/api/guests/${dragData.guestId}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+                tableNumber: tableNumber,
+                extraGuests: dragData.guest.extraGuests?.map(e => ({
+                    ...e,
+                    tableNumber: tableNumber
+                }))
+            })
+        });
+
+        if (response.ok) {
+            showNotification(`${dragData.guest.name} assigned to Table ${tableNumber}`);
+            await loadUnassignedGuests();
+        } else {
+            const error = await response.json();
+            showNotification(error.error || 'Failed to assign table', 'error');
+        }
+        // else if (dragData.type === 'extra') {
+        //     // Assign single extra guest
+        //     const updatedExtraGuests = [...dragData.guest.extraGuests];
+        //     updatedExtraGuests[dragData.extraIndex] = {
+        //         ...updatedExtraGuests[dragData.extraIndex],
+        //         tableNumber: tableNumber
+        //     };
+        //
+        //     const response = await fetch(`/api/guests/${dragData.guestId}`, {
+        //         method: 'PUT',
+        //         headers: {
+        //             'Content-Type': 'application/json',
+        //             'Authorization': `Bearer ${token}`
+        //         },
+        //         body: JSON.stringify({
+        //             extraGuests: updatedExtraGuests
+        //         })
+        //     });
+        //
+        //     if (response.ok) {
+        //         showNotification(`${dragData.extraGuest.name} assigned to Table ${tableNumber}`);
+        //         await loadUnassignedGuests();
+        //     } else {
+        //         const error = await response.json();
+        //         showNotification(error.error || 'Failed to assign table', 'error');
+        //     }
+        // }
+    } catch (error) {
+        console.error('Error assigning table:', error);
+        showNotification('Failed to assign table', 'error');
+    }
+}
+
+
+// Update table capacities
+function updateTableCapacities() {
+    // Calculate capacity for each table
+    tableCapacities = {};
+
+    allGuests.forEach(guest => {
+        if (guest.tableNumber) {
+            tableCapacities[guest.tableNumber] = (tableCapacities[guest.tableNumber] || 0) + 1;
+
+            if (guest.extraGuestsCount) {
+                tableCapacities[guest.tableNumber] += guest.extraGuestsCount;
+            }
+            if (guest.extraGuests) {
+                guest.extraGuests.forEach(extra => {
+                    tableCapacities[extra.tableNumber] = (tableCapacities[extra.tableNumber] || 0) + 1;
+
+                });
+            }
+        }
     });
 
-    // Update each table on the floor plan
+    // Update UI
     for (let i = 1; i <= 75; i++) {
-        const tableElement = document.getElementById(`table-${i}`);
-        if (tableElement) {
-            const guestCount = tableCounts[i] || 0;
-            const seatCount = tableSeats[i] || 0;
-            if (seatCount === 10) {
-                tableElement.classList.add('full');
-                tableElement.classList.remove('occupied');
-            } else if (guestCount > 0 && seatCount < 10) {
-                tableElement.classList.add('occupied');
-                tableElement.classList.remove('full');
+        const table = document.getElementById(`table-${i}`);
+        if (table) {
+            const capacity = tableCapacities[i] || 0;
+            table.querySelector('.table-capacity').textContent = `${capacity}/10`;
+
+            if (capacity > 0) {
+                table.classList.add('occupied');
             } else {
-                tableElement.classList.remove('occupied');
-                tableElement.classList.remove('full');
+                table.classList.remove('occupied');
+            }
+
+            if (capacity === 10) {
+                table.classList.add('full');
+                table.classList.remove('occupied');
+            } else if (capacity > 0 && capacity < 10) {
+                table.classList.add('occupied');
+                table.classList.remove('full');
+            } else {
+                table.classList.remove('occupied');
+                table.classList.remove('full');
             }
         }
     }
-
     updateStats();
 }
 
+// Show notification
+function showNotification(message, type = 'success') {
+    const notification = document.getElementById('notification');
+    notification.textContent = message;
+    notification.className = `notification ${type} show`;
+
+    setTimeout(() => {
+        notification.classList.remove('show');
+    }, 3000);
+}
+
 function updateStats() {
-    document.getElementById('totalGuests').textContent = guests.reduce((sum, g) => {
+    document.getElementById('totalGuests').textContent = allGuests.reduce((sum, g) => {
         return sum + 1 + (g.extraGuests ? g.extraGuests.length : 0) + (g.extraGuestsCount || 0);
     }, 0);
-    const occupiedTables = new Set(guests.map(g => g.tableNumber)).size;
-    document.getElementById('occupiedTables').textContent = occupiedTables;
+    const occupiedTables = allGuests.filter(g => g.tableNumber).map(g => g.tableNumber);
+    document.getElementById('occupiedTables').textContent = new Set(occupiedTables).size;
 }
 
 function showTableDetails(tableNumber) {
-    const tableGuests = guests.filter(g => g.tableNumber === tableNumber);
+    const tableGuests = allGuests.filter(g => g.tableNumber === tableNumber);
     document.getElementById('tableModalTitle').textContent = `Table ${tableNumber}`;
 
     // Calculate total seats
@@ -211,7 +446,7 @@ function showTableDetails(tableNumber) {
     });
 
     document.getElementById('tableModalStats').textContent =
-        `${tableGuests.length} main guest${tableGuests.length !== 1 ? 's' : ''} • ${totalSeats} total seat${totalSeats !== 1 ? 's' : ''}`;
+        `${totalSeats} total seat${totalSeats !== 1 ? 's' : ''}`;
 
     const guestList = document.getElementById('tableGuestList');
     if (tableGuests.length === 0) {
@@ -222,7 +457,7 @@ function showTableDetails(tableNumber) {
             if (guest.extraGuests && guest.extraGuests.length > 0) {
                 extraInfo += `<div style="margin-left: 20px; margin-top: 5px; font-size: 12px; color: #8a7a8a;">`;
                 guest.extraGuests.forEach(extra => {
-                    extraInfo += `<div>+ ${extra}</div>`;
+                    extraInfo += `<div>+ ${extra.name}</div>`;
                 });
                 extraInfo += `</div>`;
             }
@@ -239,8 +474,7 @@ function showTableDetails(tableNumber) {
                             ${guest.phone ? `<div style="font-size: 11px; color: #a88b98;">${guest.phone}</div>` : ''}
                         </div>
                         <div style="display: flex; gap: 8px;">
-                            <button class="btn-edit" onclick='editGuestFromTable(${JSON.stringify(guest).replace(/'/g, "&#39;")})'>Edit</button>
-                            <button class="btn-remove" onclick="removeGuest('${guest._id}')">Remove</button>
+                            <button class="btn-remove" onclick="removeGuestFromTable('${guest._id}')">Remove</button>
                         </div>
                     </div>
                     ${extraInfo}
@@ -280,13 +514,57 @@ async function removeGuest(id) {
             }
 
             if (response.ok) {
-                guests = guests.filter(g => g._id !== id);
-                updateTableDisplay();
+                guests = allGuests.filter(g => g._id !== id);
+                updateTableCapacities();
                 // Refresh the table modal if it's open
                 const modalTitle = document.getElementById('tableModalTitle').textContent;
                 const tableNumber = parseInt(modalTitle.split(' ')[1]);
                 showTableDetails(tableNumber);
-                updateTableDisplay();
+                updateTableCapacities();
+            }
+        } catch (error) {
+            console.error('Error removing guest:', error);
+            showError('Failed to remove guest. Please try again.');
+        }
+    }
+}
+
+async function removeGuestFromTable(id) {
+    if (confirm('Are you sure you want to remove this guest?')) {
+        const token = localStorage.getItem('adminToken');
+
+        try {
+            const response = await fetch(`/api/guests/removeFromTable/${id}`, {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({tableNumber: null})
+            });
+
+            if (response.status === 401 || response.status === 403) {
+                localStorage.removeItem('adminToken');
+                window.location.href = '/admin/login';
+                return;
+            }
+
+            if (response.ok) {
+                const savedGuest = await response.json();
+
+                if (id) {
+                    // Update guest in array
+                    const index = allGuests.findIndex(g => g._id === id);
+                    if (index !== -1) {
+                        allGuests[index] = savedGuest;
+                    } else {
+                        allGuests.push(savedGuest);
+                    }
+                }
+                // Refresh the table modal if it's open
+                const modalTitle = document.getElementById('tableModalTitle').textContent;
+                const tableNumber = parseInt(modalTitle.split(' ')[1]);
+                showTableDetails(tableNumber);
+                await loadUnassignedGuests();
             }
         } catch (error) {
             console.error('Error removing guest:', error);
@@ -318,7 +596,7 @@ document.getElementById('guestForm').addEventListener('submit', async (e) => {
 
     const guestData = {
         name: document.getElementById('guestName').value,
-        tableNumber: parseInt(document.getElementById('tableNumber').value),
+        tableNumber: parseInt(document.getElementById('tableNumber').value) || undefined,
         email: document.getElementById('guestEmail').value || undefined,
         phone: document.getElementById('guestPhone').value || undefined,
         extraGuests: getExtraGuests(),
@@ -363,16 +641,16 @@ document.getElementById('guestForm').addEventListener('submit', async (e) => {
 
             if (editingGuestId) {
                 // Update guest in array
-                const index = guests.findIndex(g => g._id === editingGuestId);
+                const index = allGuests.findIndex(g => g._id === editingGuestId);
                 if (index !== -1) {
-                    guests[index] = savedGuest;
+                    allGuests[index] = savedGuest;
                 }
             } else {
                 // Add new guest to array
-                guests.push(savedGuest);
+                allGuests.push(savedGuest);
             }
 
-            updateTableDisplay();
+            updateTableCapacities();
             closeModal();
         } else {
             const error = await response.json();
@@ -385,91 +663,13 @@ document.getElementById('guestForm').addEventListener('submit', async (e) => {
     }
 });
 
-async function handleFileUpload(event) {
-    const file = event.target.files[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = async (e) => {
-        try {
-            const data = new Uint8Array(e.target.result);
-            const workbook = XLSX.read(data, { type: 'array' });
-            const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-            const jsonData = XLSX.utils.sheet_to_json(firstSheet);
-
-            const newGuests = jsonData.map(row => ({
-                name: row.name || row.Name || row.NAME,
-                tableNumber: parseInt(row.tableNumber || row['Table Number'] || row.table || row.Table || row.TABLE),
-                email: row.email || row.Email || row.EMAIL || undefined,
-                phone: row.phone || row.Phone || row.PHONE || undefined,
-                extraGuestsCount: parseInt(row.extraGuestsCount || row['Extra Guests'] || row.extras || 0) || 0
-            }));
-
-            const token = localStorage.getItem('adminToken');
-
-            const response = await fetch('/api/guests/bulk', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify(newGuests)
-            });
-
-            if (response.status === 401 || response.status === 403) {
-                localStorage.removeItem('adminToken');
-                window.location.href = '/admin/login';
-                return;
-            }
-
-            if (response.ok) {
-                const result = await response.json();
-                await loadGuests();
-                alert(result.message + (result.errors ? `\n\nErrors:\n${result.errors.join('\n')}` : ''));
-            } else {
-                const error = await response.json();
-                alert(error.error || 'Failed to upload guests');
-            }
-        } catch (error) {
-            console.error('Error processing file:', error);
-            alert('Error processing file. Please ensure it has "name" and "tableNumber" columns.');
-        }
-    };
-    reader.readAsArrayBuffer(file);
-    event.target.value = '';
-}
-
-// Close modals when clicking outside
-document.getElementById('guestModal').addEventListener('click', (e) => {
-    if (e.target.id === 'guestModal') closeModal();
-});
-
-document.getElementById('tableModal').addEventListener('click', (e) => {
-    if (e.target.id === 'tableModal') closeTableModal();
-});
-
-async function loadGuests() {
-    const token = localStorage.getItem('adminToken');
-    if (!token) {
-        window.location.href = '/admin/login';
-        return;
-    }
-    try {
-        const response = await fetch('/api/guests');
-        if (response.ok) {
-            guests = await response.json();
-            updateTableDisplay();
-        }
-    } catch (error) {
-        console.error('Error loading guests:', error);
-    }
-}
-
 function logout() {
     localStorage.removeItem('adminToken');
     window.location.href = '/admin/login';
 }
 
+
+
 // Initialize
 initializeFloorPlan();
-loadGuests();
+loadUnassignedGuests();

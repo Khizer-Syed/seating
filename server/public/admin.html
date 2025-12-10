@@ -3,59 +3,72 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin - Guest Management - Owais & Sadia</title>
+    <title>Drag & Drop Table Assignment - Owais & Sadia</title>
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="admin-styles.css">
 </head>
 <body>
 <div class="container">
     <div class="header">
-        <div style="display: flex; justify-content: space-between; align-items: start; flex-wrap: wrap; gap: 15px;">
-            <div>
-                <h1>Guest Management</h1>
-                <p class="subtitle">Owais & Sadia Wedding - December 21, 2025</p>
-                <p class="venue-info">Chateau Le Jardin Event Venue</p>
+        <div>
+            <h1>Guest Management</h1>
+            <p class="subtitle">Owais & Sadia Wedding - December 21, 2025</p>
+        </div>
+        <button class="btn btn-cancel" onclick="logout()">Logout</button>
+    </div>
+
+    <div class="stats-section">
+        <div class="stats">
+            <div class="stat-card">
+                <div class="stat-number" id="totalGuests">0</div>
+                <div class="stat-label">Total Guests</div>
             </div>
-            <button class="btn btn-cancel" onclick="logout()" style="padding: 10px 20px;">Logout</button>
+            <div class="stat-card">
+                <div class="stat-number" id="occupiedTables">0</div>
+                <div class="stat-label">Tables Occupied</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">75</div>
+                <div class="stat-label">Total Tables</div>
+            </div>
         </div>
     </div>
 
-    <div class="stats">
-        <div class="stat-card">
-            <div class="stat-number" id="totalGuests">0</div>
-            <div class="stat-label">Total Guests</div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-number" id="occupiedTables">0</div>
-            <div class="stat-label">Tables Occupied</div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-number">75</div>
-            <div class="stat-label">Total Tables</div>
+    <div class="controls-section">
+        <div class="controls">
+            <div class="actions">
+                <button class="btn btn-primary" onclick="openAddModal()">+ Add Guest</button>
+            </div>
+            <div class="zoom-controls">
+                <button class="btn btn-zoom" onclick="zoomOut()">−</button>
+                <span style="color: #6a5a6a; font-size: 14px;" id="zoomLevel">100%</span>
+                <button class="btn btn-zoom" onclick="zoomIn()">+</button>
+            </div>
         </div>
     </div>
 
-    <div class="controls">
-        <div class="actions">
-            <button class="btn btn-primary" onclick="openAddModal()">+ Add Guest</button>
-            <label class="file-upload-label">
-                📤 Upload Excel
-                <input type="file" id="fileInput" accept=".xlsx,.xls,.csv" onchange="handleFileUpload(event)">
-            </label>
+
+    <!-- Sidebar with unassigned guests -->
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <div class="sidebar-title">Unassigned Guests</div>
+            <div class="sidebar-count" id="unassignedCount">Loading...</div>
         </div>
-        <div class="zoom-controls">
-            <button class="btn btn-zoom" onclick="zoomOut()">−</button>
-            <span style="color: #6a5a6a; font-size: 14px;" id="zoomLevel">100%</span>
-            <button class="btn btn-zoom" onclick="zoomIn()">+</button>
+        <div class="unassigned-list" id="unassignedList">
+            <!-- Unassigned guests will be loaded here -->
         </div>
     </div>
 
-    <div class="floor-plan-wrapper">
+    <!-- Floor plan with tables -->
+    <div class="floor-plan-area">
         <div class="floor-plan" id="floorPlan">
             <div class="stage">40' x 12'</div>
         </div>
     </div>
 </div>
+
+<!-- Notification toast -->
+<div class="notification" id="notification"></div>
 
 <!-- Add/Edit Guest Modal -->
 <div class="modal" id="guestModal">
@@ -77,8 +90,8 @@
 
             <div class="form-row">
                 <div class="form-group">
-                    <label>Table Number *</label>
-                    <input type="number" id="tableNumber" min="1" max="75" required placeholder="1-75">
+                    <label>Table Number</label>
+                    <input type="number" id="tableNumber" min="1" max="75" placeholder="1-75">
                 </div>
                 <div class="form-group">
                     <label>Phone (Optional)</label>
@@ -127,7 +140,6 @@
     </div>
 </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="admin-script.js"></script>
 </body>
 </html>

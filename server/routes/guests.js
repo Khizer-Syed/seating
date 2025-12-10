@@ -51,25 +51,26 @@ router.post('/', authenticateToken, async (req, res) => {
         const { name, tableNumber, email, phone, extraGuests, extraGuestsCount } = req.body;
 
         // Validation
-        if (!name || !tableNumber) {
-            return res.status(400).json({ error: 'Name and table number are required' });
+        if (!name) {
+            return res.status(400).json({ error: 'Name is required' });
         }
 
-        if (tableNumber < 1 || tableNumber > 75) {
+        if (tableNumber && tableNumber < 1 || tableNumber > 75) {
             return res.status(400).json({ error: 'Table number must be between 1 and 75' });
         }
 
-        const assignedGuestsAtTable = await Guest.find({ tableNumber });
-        const totalSeatsAtTable = assignedGuestsAtTable.reduce((sum, guest) => {
-            return sum + 1 + (guest.extraGuests?.length || 0) + (guest.extraGuestsCount || 0);
-        }, 0);
+        if (tableNumber) {
+            const assignedGuestsAtTable = await Guest.find({ tableNumber });
+            const totalSeatsAtTable = assignedGuestsAtTable.reduce((sum, guest) => {
+                return sum + 1 + (guest.extraGuests?.length || 0) + (guest.extraGuestsCount || 0);
+            }, 0);
+            if (totalSeatsAtTable >= 10) {
+                return res.status(400).json({ error: 'No seats left at this table' });
+            }
 
-        if (totalSeatsAtTable >= 10) {
-            return res.status(400).json({ error: 'No seats left at this table' });
-        }
-
-        if ((totalSeatsAtTable + 1 + (extraGuestsCount || 0) + (extraGuests.length || 0)) > 10) {
-            return res.status(400).json({ error: 'Adding this guest exceeds table capacity.' });
+            if ((totalSeatsAtTable + 1 + (extraGuestsCount || 0) + (extraGuests.length || 0)) > 10) {
+                return res.status(400).json({ error: 'Adding this guest exceeds table capacity.' });
+            }
         }
 
         // Create new guest
@@ -127,6 +128,34 @@ router.put('/:id', authenticateToken, async (req, res) => {
         res.json(guest);
     } catch (error) {
         console.error('Error updating guest:', error);
+        if (error.name === 'ValidationError') {
+            return res.status(400).json({ error: error.message });
+        }
+        res.status(500).json({ error: 'Failed to update guest' });
+    }
+});
+
+router.put('/removeFromTable/:id', authenticateToken, async (req, res) => {
+    try {
+
+        const updateData = {
+            updatedAt: Date.now(),
+            tableNumber: null
+        };
+
+        const guest = await Guest.findByIdAndUpdate(
+            req.params.id,
+            updateData,
+            { new: true, runValidators: true }
+        );
+
+        if (!guest) {
+            return res.status(404).json({ error: 'Guest not found' });
+        }
+
+        res.json(guest);
+    } catch (error) {
+        console.error('Error removing guest from table:', error);
         if (error.name === 'ValidationError') {
             return res.status(400).json({ error: error.message });
         }
