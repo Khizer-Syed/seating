@@ -23,7 +23,7 @@ router.get('/', async (req, res) => {
         if (table) {
             query.tableNumber = parseInt(table);
         }
-        const guests = await Guest.find(query).sort({ name: 1 });
+        const guests = await Guest.find(query).sort({ name: 1 }).collation({ locale: 'en', strength: 2 });
         res.json(guests);
     } catch (error) {
         console.error('Error fetching guests:', error);

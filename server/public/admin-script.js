@@ -71,13 +71,13 @@ function removeExtraGuestField(id) {
     }
 }
 
-function getExtraGuests() {
+function getExtraGuests(guest = {}) {
     const extraGuests = [];
     const entries = document.querySelectorAll('.extra-guest-entry');
     entries.forEach(entry => {
         const name = entry.querySelector('.extra-guest-name').value.trim();
         if (name) {
-            extraGuests.push(name);
+            extraGuests.push({ name, response: guest?.response });
         }
     });
     return extraGuests;
@@ -86,27 +86,6 @@ function getExtraGuests() {
 function clearExtraGuestFields() {
     document.getElementById('extraGuestsList').innerHTML = '';
     extraGuestsCounter = 0;
-}
-
-function populateEditForm(guest) {
-    editingGuestId = guest._id;
-    document.getElementById('modalTitle').textContent = 'Edit Guest';
-    document.getElementById('guestName').value = guest.name;
-    document.getElementById('tableNumber').value = guest.tableNumber;
-    document.getElementById('guestEmail').value = guest.email || '';
-    document.getElementById('guestPhone').value = guest.phone || '';
-    document.getElementById('extraGuestsCount').value = guest.extraGuestsCount || 0;
-
-    // Clear and populate extra guests
-    clearExtraGuestFields();
-    if (guest.extraGuests && guest.extraGuests.length > 0) {
-        guest.extraGuests.forEach(extra => {
-            addExtraGuestField(extra.name);
-        });
-    }
-
-    document.getElementById('submitBtn').textContent = 'Update Guest';
-    document.getElementById('guestModal').classList.add('show');
 }
 
 function initializeFloorPlan() {
@@ -210,7 +189,7 @@ function renderUnassignedGuests() {
         return `
                     <div class="guest-group" draggable="true" data-guest-id="${guest._id}">
                         <div class="primary-guest">
-                            <span>${guest.name}</span>
+                            <span class="edit-guest" onclick="editGuest('${guest._id}')">${guest.name} <span title="Edit Guest">✎</span></span>
                             <span class="group-size">${groupSize} ${groupSize === 1 ? 'person' : 'people'}</span>
                         </div>
                         ${guest.extraGuests && guest.extraGuests.length > 0 ? `
@@ -237,6 +216,37 @@ function renderUnassignedGuests() {
         el.addEventListener('dragend', handleDragEnd);
     });
 }
+
+function editGuest(id) {
+    const index = allGuests.findIndex(g => g._id === id);
+    if (index !== -1) {
+        setTimeout(() => populateEditForm(allGuests[index]), 100);
+    }
+}
+
+function populateEditForm(guest) {
+    editingGuestId = guest._id;
+    document.getElementById('modalTitle').textContent = 'Edit Guest';
+    document.getElementById('guestName').value = guest.name;
+    document.getElementById('tableNumber').value = guest.tableNumber || '';
+    document.getElementById('guestEmail').value = guest.email || '';
+    document.getElementById('guestPhone').value = guest.phone || '';
+    document.getElementById('extraGuestsCount').value = guest.extraGuestsCount || 0;
+
+    // Clear and populate extra guests
+    clearExtraGuestFields();
+    if (guest.extraGuests && guest.extraGuests.length > 0) {
+        guest.extraGuests.forEach(extra => {
+            addExtraGuestField(extra.name);
+        });
+    }
+    const deleteButton = document.getElementById('deleteButton');
+    deleteButton.onclick = () => removeGuest(guest._id);
+    deleteButton.classList.add('show');
+    document.getElementById('submitBtn').textContent = 'Update Guest';
+    document.getElementById('guestModal').classList.add('show');
+}
+
 
 // Drag handlers
 function handleDragStart(e) {
@@ -443,11 +453,6 @@ function showTableDetails(tableNumber) {
     document.getElementById('tableModal').classList.add('show');
 }
 
-function editGuestFromTable(guest) {
-    closeTableModal();
-    setTimeout(() => populateEditForm(guest), 100);
-}
-
 function closeTableModal() {
     document.getElementById('tableModal').classList.remove('show');
 }
@@ -472,12 +477,8 @@ async function removeGuest(id) {
 
             if (response.ok) {
                 guests = allGuests.filter(g => g._id !== id);
-                updateTableCapacities();
-                // Refresh the table modal if it's open
-                const modalTitle = document.getElementById('tableModalTitle').textContent;
-                const tableNumber = parseInt(modalTitle.split(' ')[1]);
-                showTableDetails(tableNumber);
-                updateTableCapacities();
+                await loadUnassignedGuests();
+                closeModal();
             }
         } catch (error) {
             console.error('Error removing guest:', error);
@@ -550,13 +551,13 @@ function closeModal() {
 document.getElementById('guestForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     hideError(); // Clear any previous errors
-
+    const editingGuestIndex = allGuests.findIndex(g => g._id === editingGuestId);
     const guestData = {
         name: document.getElementById('guestName').value,
         tableNumber: parseInt(document.getElementById('tableNumber').value) || undefined,
         email: document.getElementById('guestEmail').value || undefined,
         phone: document.getElementById('guestPhone').value || undefined,
-        extraGuests: getExtraGuests(),
+        extraGuests: getExtraGuests(editingGuestId ? allGuests[editingGuestIndex] : null),
         extraGuestsCount: parseInt(document.getElementById('extraGuestsCount').value) || 0
     };
 
@@ -607,7 +608,7 @@ document.getElementById('guestForm').addEventListener('submit', async (e) => {
                 allGuests.push(savedGuest);
             }
 
-            updateTableCapacities();
+            await loadUnassignedGuests();
             closeModal();
         } else {
             const error = await response.json();
