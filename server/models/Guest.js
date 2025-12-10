@@ -1,6 +1,5 @@
 // models/Guest.js
 import mongoose from 'mongoose';
-
 const extraGuestSchema = new mongoose.Schema({
     name: {
         type: String,
@@ -9,12 +8,15 @@ const extraGuestSchema = new mongoose.Schema({
     },
     tableNumber: {
         type: Number,
-        required: true,
         min: 1,
         max: 75
+    },
+    response: {
+        type: String,
+        enum: ['Attending', 'Declined', 'Awaiting'],
+        default: 'Awaiting'
     }
 }, { _id: false });
-
 const guestSchema = new mongoose.Schema({
     name: {
         type: String,
@@ -24,7 +26,6 @@ const guestSchema = new mongoose.Schema({
     },
     tableNumber: {
         type: Number,
-        required: true,
         min: 1,
         max: 75
     },
@@ -43,6 +44,11 @@ const guestSchema = new mongoose.Schema({
         type: Number,
         default: 0,
         min: 0
+    },
+    response: {
+        type: String,
+        enum: ['Attending', 'Declined', 'Awaiting'],
+        default: 'Awaiting'
     },
     createdAt: {
         type: Date,

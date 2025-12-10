@@ -1,51 +1,5 @@
-// Sample guest data - Replace with your actual guest list
-const guests = [
-    { name: "Ahmed Ali", table: 1 },
-    { name: "Amina Khan", table: 1 },
-    { name: "Bilal Ahmed", table: 2 },
-    { name: "Ayesha Siddiqui", table: 1 },
-    { name: "Fatima Hassan", table: 3 },
-    { name: "Hassan Ibrahim", table: 2 },
-    { name: "Zainab Malik", table: 3 },
-    { name: "Omar Farooq", table: 4 },
-    { name: "Khadija Rahman", table: 4 },
-    { name: "Ibrahim Yusuf", table: 5 },
-    { name: "Maryam Ahmed", table: 5 },
-    { name: "Yusuf Abdullah", table: 6 },
-    { name: "Noor Fatima", table: 6 },
-    { name: "Ali Hassan", table: 7 },
-    { name: "Sara Khan", table: 7 },
-    { name: "Mohammed Iqbal", table: 8 },
-    { name: "Layla Ahmed", table: 8 },
-    { name: "Tariq Mahmood", table: 9 },
-    { name: "Hiba Rashid", table: 9 },
-    { name: "Usman Malik", table: 10 },
-    { name: "Rabia Naveed", table: 10 },
-    { name: "Daniyal Sheikh", table: 11 },
-    { name: "Eman Zahra", table: 11 },
-    { name: "Junaid Siddiqui", table: 12 },
-    { name: "Ashna Khan", table: 12 },
-    { name: "Khalid Anwar", table: 13 },
-    { name: "Nadia Farhan", table: 13 },
-    { name: "Samir Abbas", table: 14 },
-    { name: "Iqra Hussain", table: 14 },
-    { name: "Rashid Ali", table: 15 },
-    { name: "Warda Saleem", table: 15 },
-];
+let guests = [];
 
-// Generate additional guests to reach 50 tables
-const additionalNames = [
-    "Faisal", "Hina", "Imran", "Javeria", "Kashif", "Lubna", "Nabeel", "Qasim",
-    "Rehan", "Sana", "Talha", "Very", "Xavier", "Gul", "Pervez"
-];
-const surnames = ["Ahmed", "Khan", "Malik", "Hassan", "Ali", "Rahman", "Siddiqui", "Farooq"];
-
-for (let i = 16; i <= 50; i++) {
-    const firstName = additionalNames[Math.floor(Math.random() * additionalNames.length)];
-    const surname = surnames[Math.floor(Math.random() * surnames.length)];
-    guests.push({ name: `${firstName} ${surname} ${i}`, table: i });
-    guests.push({ name: `Guest ${i}A`, table: i });
-}
 
 // Search functionality
 const searchInput = document.getElementById('searchInput');
@@ -66,7 +20,7 @@ searchInput.addEventListener('input', function() {
     if (found) {
         searchResult.innerHTML = `
                     <div class="result-name">${found.name}</div>
-                    <div class="result-table">Table ${found.table}</div>
+                    <div class="result-table">Table ${found.tableNumber}</div>
                 `;
         searchResult.classList.add('show');
     } else {
@@ -78,10 +32,23 @@ searchInput.addEventListener('input', function() {
 // Generate Name Filter Content
 function generateNameContent() {
     const nameContent = document.getElementById('nameContent');
-    const sortedGuests = [...guests].sort((a, b) => a.name.localeCompare(b.name));
+    let flattenedGuests = [];
+    for (const guest of guests) {
+        flattenedGuests.push({ name: guest.name, tableNumber: guest.tableNumber });
+        if (guest.extraGuests && guest.extraGuests.length > 0) {
+            guest.extraGuests.forEach(extra => {
+                flattenedGuests.push({ ...extra, tableNumber: guest.tableNumber });
+            });
+        }
+        if (guest.extraGuestsCount && guest.extraGuestsCount > 0) {
+            for (let i = 1; i <= guest.extraGuestsCount; i++) {
+                flattenedGuests.push({ name: `${guest.name} plus ${i}`, tableNumber: guest.tableNumber });
+            }
+        }
+    }
 
     const groupedByLetter = {};
-    sortedGuests.forEach(guest => {
+    flattenedGuests.forEach(guest => {
         const firstLetter = guest.name[0].toUpperCase();
         if (!groupedByLetter[firstLetter]) {
             groupedByLetter[firstLetter] = [];
@@ -97,7 +64,7 @@ function generateNameContent() {
                         ${groupedByLetter[letter].map(guest => `
                             <div class="guest-item">
                                 <span class="guest-name">${guest.name}</span>
-                                <span class="table-number">Table ${guest.table}</span>
+                                <span class="table-number">Table ${guest.tableNumber}</span>
                             </div>
                         `).join('')}
                     </div>
@@ -113,21 +80,35 @@ function generateTableContent() {
 
     const groupedByTable = {};
     guests.forEach(guest => {
-        if (!groupedByTable[guest.table]) {
-            groupedByTable[guest.table] = [];
+        if (!groupedByTable[guest.tableNumber]) {
+            groupedByTable[guest.tableNumber] = [];
         }
-        groupedByTable[guest.table].push(guest);
+        groupedByTable[guest.tableNumber].push(guest);
     });
 
     let html = '';
-    for (let i = 1; i <= 50; i++) {
+    for (let i = 1; i <= 75; i++) {
         const tableGuests = groupedByTable[i] || [];
+        let expandedGuests = [];
+        tableGuests.forEach(guest => {
+            expandedGuests.push({ name: guest.name });
+            if (guest.extraGuests && guest.extraGuests.length > 0) {
+                guest.extraGuests.forEach(extra => {
+                    expandedGuests.push({ name: extra.name });
+                });
+            }
+            if (guest.extraGuestsCount && guest.extraGuestsCount > 0) {
+                for (let j = 1; j <= guest.extraGuestsCount; j++) {
+                    expandedGuests.push({ name: `${guest.name} plus ${j}` });
+                }
+            }
+        });
         html += `
                     <div class="table-section">
                         <div class="section-header">Table ${i}</div>
                         <div class="table-guests">
-                            ${tableGuests.length > 0
-            ? tableGuests.map(guest => `
+                            ${expandedGuests.length > 0
+            ? expandedGuests.map(guest => `
                                     <div class="table-guest-name">${guest.name}</div>
                                 `).join('')
             : '<div class="table-guest-name" style="color: #a88b98; font-style: italic;">No guests assigned</div>'
@@ -159,6 +140,19 @@ function switchTab(tab) {
     }
 }
 
+async function loadGuests() {
+    try {
+        const response = await fetch('/api/guests?assigned=true');
+        if (response.ok) {
+            guests = await response.json();
+        }
+    } catch (error) {
+        console.error('Error loading guests:', error);
+    }
+}
+
 // Initialize content on page load
-generateNameContent();
-generateTableContent();
+loadGuests().then(() => {
+    generateNameContent();
+    generateTableContent();
+});
