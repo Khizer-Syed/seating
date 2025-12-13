@@ -162,6 +162,11 @@ h1 {
     border-style: dashed;
 }
 
+.guest-group.awaiting {
+    border-color: #f0a500;
+    background: #fff8e1;
+}
+
 .guest-group:hover {
     border-color: #a88b98;
     box-shadow: 0 4px 12px rgba(168, 139, 152, 0.2);

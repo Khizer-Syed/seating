@@ -187,7 +187,7 @@ function renderUnassignedGuests() {
     unassignedList.innerHTML = unassignedGuests.map(guest => {
         const groupSize = calculateGroupSize(guest);
         return `
-                    <div class="guest-group ${guest.response && guest.response === 'Declined' ? 'declined' : ''}" draggable="true" data-guest-id="${guest._id}">
+                    <div class="guest-group ${guest.response && guest.response === 'Declined' ? 'declined' : ''} ${guest.response && guest.response === 'Awaiting' ? 'awaiting' : ''}" draggable="true" data-guest-id="${guest._id}">
                         <div class="primary-guest">
                             <span class="edit-guest" onclick="editGuest('${guest._id}')">${guest.name} <span title="Edit Guest">✎</span></span>
                             <span class="group-size">${groupSize} ${groupSize === 1 ? 'person' : 'people'}</span>
