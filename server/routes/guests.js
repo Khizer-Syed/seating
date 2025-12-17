@@ -52,7 +52,7 @@ router.get('/:id', async (req, res) => {
 // POST /api/guests - Add single guest
 router.post('/', authenticateToken, async (req, res) => {
     try {
-        const { name, tableNumber, email, phone, extraGuests, extraGuestsCount } = req.body;
+        const { name, tableNumber, email, phone, extraGuests, extraGuestsCount, response } = req.body;
 
         // Validation
         if (!name) {
@@ -83,6 +83,7 @@ router.post('/', authenticateToken, async (req, res) => {
             tableNumber,
             email,
             phone,
+            response,
             extraGuests: extraGuests || [],
             extraGuestsCount: extraGuestsCount || 0
         });
@@ -101,7 +102,7 @@ router.post('/', authenticateToken, async (req, res) => {
 // PUT /api/guests/:id - Update guest
 router.put('/:id', authenticateToken, async (req, res) => {
     try {
-        const { name, tableNumber, email, phone, extraGuests, extraGuestsCount } = req.body;
+        const { name, tableNumber, email, phone, extraGuests, extraGuestsCount, response } = req.body;
 
         // Validation
         if (tableNumber && (tableNumber < 1 || tableNumber > 75)) {
@@ -116,6 +117,7 @@ router.put('/:id', authenticateToken, async (req, res) => {
         if (tableNumber) updateData.tableNumber = tableNumber;
         if (email !== undefined) updateData.email = email;
         if (phone !== undefined) updateData.phone = phone;
+        if (response !== undefined) updateData.response = response;
         if (extraGuests !== undefined) updateData.extraGuests = extraGuests;
         if (extraGuestsCount !== undefined) updateData.extraGuestsCount = extraGuestsCount;
 

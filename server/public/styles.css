@@ -147,23 +147,33 @@ body {
     border-radius: 8px;
     border-left: 4px solid #a88b98;
     display: none;
+    max-height: 200px;
+    overflow-y: auto;
 }
 
 .search-result.show {
     display: block;
 }
 
+.result {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+    gap: 8px;
+}
+
 .result-name {
     font-size: 18px;
     color: #6a5a6a;
-    margin-bottom: 8px;
-    font-weight: 600;
+    font-weight: 400;
 }
 
 .result-table {
-    font-size: 24px;
+    font-size: 18px;
     color: #a88b98;
     font-weight: 600;
+    flex-shrink: 0;
 }
 
 .no-result {
