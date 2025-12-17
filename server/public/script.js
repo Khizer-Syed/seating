@@ -5,7 +5,7 @@ let guests = [];
 const searchInput = document.getElementById('searchInput');
 const searchResult = document.getElementById('searchResult');
 
-searchInput.addEventListener('input', function() {
+searchInput.addEventListener('input', function () {
     const searchTerm = this.value.trim().toLowerCase();
 
     if (searchTerm === '') {
@@ -13,15 +13,28 @@ searchInput.addEventListener('input', function() {
         return;
     }
 
-    const found = guests.find(guest =>
-        guest.name.toLowerCase().includes(searchTerm)
-    );
+    const guestsFound = [];
 
-    if (found) {
-        searchResult.innerHTML = `
-                    <div class="result-name">${found.name}</div>
-                    <div class="result-table">Table ${found.tableNumber}</div>
-                `;
+    for (const guest of guests) {
+        const [firstName, middleName, lastName] = guest.name.toLowerCase().split(' ');
+        if (firstName.startsWith(searchTerm) || (middleName && middleName.startsWith(searchTerm)) || (lastName && lastName.startsWith(searchTerm))) {
+            guestsFound.push(guest);
+        }
+        if (guest.extraGuests && guest.extraGuests.length > 0) {
+            for (const extra of guest.extraGuests) {
+                const [extraFirstName, extraMiddleName, extraLastName] = extra.name.toLowerCase().split(' ');
+                if (extraFirstName.startsWith(searchTerm) || (extraMiddleName && extraMiddleName.startsWith(searchTerm)) || (extraLastName && extraLastName.startsWith(searchTerm))) {
+                    guestsFound.push({name: extra.name, tableNumber: guest.tableNumber});
+                }
+            }
+        }
+    }
+
+    if (guestsFound.length > 0) {
+        searchResult.innerHTML = guestsFound.map(found => `
+                    <div class="result"><div class="result-name">${found.name}</div>
+                    <div class="result-table">Table ${found.tableNumber}</div></div>
+                `).join('');
         searchResult.classList.add('show');
     } else {
         searchResult.innerHTML = '<div class="no-result">Guest not found</div>';
@@ -34,15 +47,15 @@ function generateNameContent() {
     const nameContent = document.getElementById('nameContent');
     let flattenedGuests = [];
     for (const guest of guests) {
-        flattenedGuests.push({ name: guest.name, tableNumber: guest.tableNumber });
+        flattenedGuests.push({name: guest.name, tableNumber: guest.tableNumber});
         if (guest.extraGuests && guest.extraGuests.length > 0) {
             guest.extraGuests.forEach(extra => {
-                flattenedGuests.push({ ...extra, tableNumber: guest.tableNumber });
+                flattenedGuests.push({...extra, tableNumber: guest.tableNumber});
             });
         }
         if (guest.extraGuestsCount && guest.extraGuestsCount > 0) {
             for (let i = 1; i <= guest.extraGuestsCount; i++) {
-                flattenedGuests.push({ name: `${guest.name} plus ${i}`, tableNumber: guest.tableNumber });
+                flattenedGuests.push({name: `${guest.name} plus ${i}`, tableNumber: guest.tableNumber});
             }
         }
     }
@@ -91,15 +104,15 @@ function generateTableContent() {
         const tableGuests = groupedByTable[i] || [];
         let expandedGuests = [];
         tableGuests.forEach(guest => {
-            expandedGuests.push({ name: guest.name });
+            expandedGuests.push({name: guest.name});
             if (guest.extraGuests && guest.extraGuests.length > 0) {
                 guest.extraGuests.forEach(extra => {
-                    expandedGuests.push({ name: extra.name });
+                    expandedGuests.push({name: extra.name});
                 });
             }
             if (guest.extraGuestsCount && guest.extraGuestsCount > 0) {
                 for (let j = 1; j <= guest.extraGuestsCount; j++) {
-                    expandedGuests.push({ name: `${guest.name} plus ${j}` });
+                    expandedGuests.push({name: `${guest.name} plus ${j}`});
                 }
             }
         });

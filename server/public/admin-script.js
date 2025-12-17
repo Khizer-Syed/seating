@@ -568,6 +568,7 @@ document.getElementById('guestForm').addEventListener('submit', async (e) => {
         email: document.getElementById('guestEmail').value || undefined,
         phone: document.getElementById('guestPhone').value || undefined,
         extraGuests: getExtraGuests(editingGuestId ? allGuests[editingGuestIndex] : null),
+        response: document.getElementById('responseStatus').value || 'Awaiting',
         extraGuestsCount: parseInt(document.getElementById('extraGuestsCount').value) || 0
     };
 
